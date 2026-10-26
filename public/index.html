@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Lab Requisition</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #fff; --ink: #1c1f24; --muted: #5d6572; --line: #d9dde3;
+    --accent: #0f5c8c; --accent-ink: #fff; --warn-bg: #fff6e5; --warn-ink: #7a4b00;
+    --err-bg: #fdecec; --err-ink: #8a1c1c; --ok-bg: #e8f5ec; --ok-ink: #1d5c33;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 14px 16px; }
+  header .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; justify-content: space-between; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 19px; margin: 0; }
+  .clinician { color: var(--muted); font-size: 13px; }
+  .clinician b { color: var(--ink); }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+  section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  h2 { font-size: 15px; margin: 0 0 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  h3 { font-size: 14px; margin: 14px 0 6px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 14px; }
+  label.f { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--muted); }
+  label.f input, label.f select, label.f textarea { font: inherit; color: var(--ink); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  label.f input:focus, label.f select:focus, label.f textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+  .span2 { grid-column: span 2; }
+  @media (max-width: 480px) { .span2 { grid-column: span 1; } }
+  .radios { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 14px; }
+  .radios label { display: inline-flex; gap: 5px; align-items: center; }
+  .boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px 16px; }
+  .box { display: flex; align-items: center; gap: 8px; padding: 4px 2px; }
+  .box input[type=checkbox] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+  .box input[type=text] { flex: 1; min-width: 90px; font: inherit; font-size: 13px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 5px; }
+  .sub { margin: 4px 0 0 26px; font-size: 13px; color: var(--muted); }
+  .lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 14px; counter-reset: line; }
+  .lines label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .lines label::before { counter-increment: line; content: counter(line) "."; width: 1.6em; text-align: right; }
+  .lines input { flex: 1; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
+  .chip { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--line); background: #fff; border-radius: 999px; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .note { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .msg { border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-top: 10px; }
+  .msg.err { background: var(--err-bg); color: var(--err-ink); }
+  .msg.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .msg.ok { background: var(--ok-bg); color: var(--ok-ink); }
+  .msg ul { margin: 4px 0 0 18px; padding: 0; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button.primary { font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 11px 18px; cursor: pointer; }
+  button.primary[disabled] { opacity: .6; cursor: wait; }
+  button.ghost { font: inherit; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+  .hidden { display: none !important; }
+  #preview { width: 100%; height: 80vh; border: 1px solid var(--line); border-radius: 8px; background: #888; }
+  .count { font-size: 13px; color: var(--muted); }
+  footer { max-width: 1100px; margin: 0 auto; padding: 8px 16px 32px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Ontario Laboratory Requisition <span class="count" id="formEdition"></span></h1>
+    <div class="clinician" id="clinicianBlock">Loading…</div>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1 · Patient</h2>
+    <div class="grid">
+      <label class="f">Last name <em>(as on health card)</em><input id="lastName" autocomplete="off" required></label>
+      <label class="f">First name<input id="firstName" autocomplete="off" required></label>
+      <label class="f">Middle names<input id="middleNames" autocomplete="off"></label>
+      <label class="f">Date of birth<input id="dob" type="date" required></label>
+      <label class="f">Sex (the form has M / F only)
+        <select id="sex"><option value="">—</option><option value="F">Female</option><option value="M">Male</option></select>
+      </label>
+      <label class="f">Payer
+        <select id="payer"><option value="ohip">OHIP</option><option value="uninsured">Uninsured</option><option value="wsib">WSIB</option></select>
+      </label>
+      <label class="f">Health number (10 digits)<input id="healthNumber" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="1234567890"></label>
+      <label class="f">Version code<input id="healthNumberVersion" maxlength="2" autocomplete="off" placeholder="AB" style="text-transform:uppercase"></label>
+      <label class="f span2">Address, including postal code<input id="address" autocomplete="off"></label>
+      <label class="f">Telephone<input id="phone" type="tel" autocomplete="off"></label>
+      <label class="f">Province if not Ontario<input id="province" autocomplete="off"></label>
+      <label class="f">Other provincial registration number<input id="otherProvincialNumber" autocomplete="off"></label>
+    </div>
+    <div id="hnMsg"></div>
+  </section>
+
+  <section class="card">
+    <h2>2 · Tests</h2>
+    <div id="sections"></div>
+
+    <h3>Vitamin D (25-hydroxy)</h3>
+    <div class="radios">
+      <label><input type="radio" name="vitaminD" value=""> Not ordered</label>
+      <label><input type="radio" name="vitaminD" value="insured"> Insured — meets OHIP criteria</label>
+      <label><input type="radio" name="vitaminD" value="uninsured"> Uninsured — patient pays</label>
+    </div>
+    <p class="note">OHIP covers vitamin D only for osteoporosis, osteopenia, rickets, renal disease, malabsorption syndromes, or medications affecting vitamin D metabolism.</p>
+
+    <h3>Other tests — one test per line</h3>
+    <div class="chips" id="chips"></div>
+    <div class="lines" id="lines"></div>
+    <p class="note">A twelfth line starts a second sheet. Write the test the way the lab names it.</p>
+  </section>
+
+  <section class="card">
+    <h2>3 · Clinical information and dates</h2>
+    <div class="grid">
+      <label class="f span2">Additional clinical information (e.g. diagnosis)<textarea id="clinicalInfo" rows="2"></textarea></label>
+      <label class="f">Date of service<input id="serviceDate" type="date"></label>
+      <label class="f">Date beside signature<input id="signatureDate" type="date"></label>
+    </div>
+    <h3>Copy of results to (optional)</h3>
+    <div class="grid">
+      <label class="f">Last name<input id="copyLast" autocomplete="off"></label>
+      <label class="f">First name<input id="copyFirst" autocomplete="off"></label>
+      <label class="f span2">Address<input id="copyAddress" autocomplete="off"></label>
+    </div>
+    <p class="note">Fill this in to have the lab also send the report to you. The requisition itself always goes out under the clinician shown at the top, with the signature box left empty for them to sign.</p>
+  </section>
+
+  <section class="card">
+    <h2>4 · Print</h2>
+    <div class="actions">
+      <button class="primary" id="make">Create requisition</button>
+      <button class="ghost hidden" id="print">Print</button>
+      <a class="ghost hidden" id="download" style="text-decoration:none">Download PDF</a>
+      <a class="ghost hidden" id="open" target="_blank" rel="noopener" style="text-decoration:none">Open in new tab</a>
+      <button class="ghost" id="clear" type="button">Clear form</button>
+    </div>
+    <div id="msg"></div>
+    <iframe id="preview" class="hidden" title="Requisition preview"></iframe>
+  </section>
+</main>
+<footer>Ministry of Health form 4422-84. Nothing entered here is stored on any server: the page sends the order once, receives the PDF, and forgets it when you leave.</footer>
+
+<script>
+(async function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const today = new Date().toISOString().slice(0, 10);
+  $('serviceDate').value = today;
+  $('signatureDate').value = today;
+
+  const COMMON = ['TSH', 'Ferritin', 'Vitamin B12', 'Magnesium', 'Iron, TIBC, % saturation', 'hs-CRP', 'ESR', 'AST', 'GGT', 'Calcium', 'Phosphate', 'Urea', 'Folate', 'Free T4', 'Free T3', 'Fasting insulin', 'Celiac screen (tTG-IgA, total IgA)', 'Estradiol', 'FSH / LH', 'Prolactin', 'Progesterone', 'DHEA-S', 'Cortisol (AM)', 'Zinc', 'Homocysteine', 'Hepatitis B surface antigen', 'β-hCG, serum'];
+
+  let desc;
+  try {
+    const r = await fetch('/api/requisition');
+    desc = await r.json();
+  } catch (e) {
+    $('clinicianBlock').textContent = 'Could not load the form description.';
+    return;
+  }
+  const c = desc.clinician;
+  $('clinicianBlock').innerHTML = `Printed under <b>${esc(c.name)}</b> · ${esc(c.address)} · Billing ${esc(c.billingNumber)} · CPSO ${esc(c.cpso)}`;
+  $('formEdition').textContent = desc.form;
+
+  // ── Tick boxes, grouped as on the printed form ──
+  const RADIO_UI = {
+    'Biochemistry':   { name: 'glucoseTiming',   title: 'Glucose', opts: [['random', 'Random'], ['fasting', 'Fasting']], when: 'row1.0' },
+    'Viral Hepatitis':{ name: 'hepatitisReason', title: 'Reason',  opts: [['acute', 'Acute hepatitis'], ['chronic', 'Chronic hepatitis'], ['immune', 'Immune status / previous exposure']], when: null },
+    'PSA':            { name: 'psaInsurance',    title: 'PSA',     opts: [['insured', 'Insured — meets OHIP criteria'], ['uninsured', 'Uninsured — patient pays']], when: null },
+  };
+  const secHtml = desc.sections.map(s => {
+    const boxes = s.boxes.map(b => `
+      <div class="box">
+        <input type="checkbox" id="cb-${esc(b.field)}" data-field="${esc(b.field)}" data-label="${esc(b.label)}">
+        <label for="cb-${esc(b.field)}">${esc(b.label)}${b.fasting ? ' <span class="count">(fasting)</span>' : ''}</label>
+        ${b.specify ? `<input type="text" data-specify="${esc(b.field)}" placeholder="specify source">` : ''}
+      </div>`).join('');
+    const r = RADIO_UI[s.title];
+    const radios = r ? `<div class="sub radios" id="sub-${esc(r.name)}"><span>${esc(r.title)}:</span>${r.opts.map(([v, l]) => `<label><input type="radio" name="${r.name}" value="${v}"> ${esc(l)}</label>`).join('')}</div>` : '';
+    return `<h3>${esc(s.title)}</h3><div class="boxes">${boxes}</div>${radios}`;
+  }).join('');
+  $('sections').innerHTML = secHtml;
+  // Random is the usual glucose default; the others must be chosen deliberately.
+  document.querySelector('input[name=glucoseTiming][value=random]').checked = true;
+
+  // ── Other Tests lines ──
+  const lines = [];
+  for (let i = 0; i < desc.otherTestLines; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.autocomplete = 'off'; inp.dataset.line = i;
+    const lab = document.createElement('label'); lab.appendChild(inp);
+    $('lines').appendChild(lab); lines.push(inp);
+  }
+  const addLine = text => {
+    if (lines.some(l => l.value.trim().toLowerCase() === text.toLowerCase())) return;
+    const free = lines.find(l => !l.value.trim());
+    if (free) { free.value = text; return; }
+    const extra = document.createElement('input');
+    extra.type = 'text'; extra.autocomplete = 'off'; extra.value = text;
+    const lab = document.createElement('label'); lab.appendChild(extra);
+    $('lines').appendChild(lab); lines.push(extra);
+  };
+  $('chips').innerHTML = COMMON.map(t => `<button type="button" class="chip">${esc(t)}</button>`).join('');
+  $('chips').addEventListener('click', e => { if (e.target.classList.contains('chip')) addLine(e.target.textContent); });
+
+  // ── Health number: 10 digits, mod-10 check (advisory only) ──
+  const luhn = d => { let s = 0; for (let i = 0; i < d.length; i++) { let n = +d[d.length - 1 - i]; if (i % 2 === 1) { n *= 2; if (n > 9) n -= 9; } s += n; } return s % 10 === 0; };
+  const hnCheck = () => {
+    const d = $('healthNumber').value.replace(/\D/g, '');
+    const box = $('hnMsg');
+    if (!d) { box.innerHTML = ''; return; }
+    if (d.length !== 10) box.innerHTML = `<div class="msg warn">Health number has ${d.length} digits; Ontario numbers have 10.</div>`;
+    else if (!luhn(d)) box.innerHTML = `<div class="msg warn">That health number fails the check digit. Re-check it against the card before printing.</div>`;
+    else box.innerHTML = '';
+  };
+  $('healthNumber').addEventListener('input', hnCheck);
+
+  // ── Collect the page into the request body ──
+  const radio = name => (document.querySelector(`input[name=${name}]:checked`) || {}).value || '';
+  const collect = () => ({
+    patient: {
+      lastName: $('lastName').value, firstName: $('firstName').value, middleNames: $('middleNames').value,
+      dob: $('dob').value, sex: $('sex').value, payer: $('payer').value,
+      healthNumber: $('healthNumber').value, healthNumberVersion: $('healthNumberVersion').value,
+      address: $('address').value, phone: $('phone').value,
+      province: $('province').value, otherProvincialNumber: $('otherProvincialNumber').value,
+    },
+    order: {
+      checkboxes: [...document.querySelectorAll('input[data-field]:checked')].map(i => i.dataset.field),
+      specify: Object.fromEntries([...document.querySelectorAll('input[data-specify]')].map(i => [i.dataset.specify, i.value])),
+      glucoseTiming: radio('glucoseTiming'), hepatitisReason: radio('hepatitisReason'),
+      psaInsurance: radio('psaInsurance'), vitaminD: radio('vitaminD'),
+      otherTests: lines.map(l => l.value),
+    },
+    clinicalInfo: $('clinicalInfo').value,
+    serviceDate: $('serviceDate').value, signatureDate: $('signatureDate').value,
+    copyTo: { lastName: $('copyLast').value, firstName: $('copyFirst').value, address: $('copyAddress').value },
+  });
+
+  const show = (kind, title, items) => {
+    $('msg').innerHTML = `<div class="msg ${kind}">${esc(title)}${items && items.length ? `<ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : ''}</div>`;
+  };
+
+  let blobUrl = null;
+  $('make').addEventListener('click', async () => {
+    const btn = $('make'); btn.disabled = true; btn.textContent = 'Building…';
+    $('msg').innerHTML = '';
+    try {
+      const body = collect();
+      const r = await fetch('/api/requisition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) {
+        let j = {}; try { j = await r.json(); } catch {}
+        show('err', 'The requisition was not built:', j.errors || [j.error || `HTTP ${r.status}`]);
+        return;
+      }
+      const sheets = Number(r.headers.get('X-Requisition-Sheets') || 1);
+      const blob = await r.blob();
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      blobUrl = URL.createObjectURL(blob);
+      const stem = `requisition-${body.patient.lastName}-${body.patient.firstName}`.replace(/[^A-Za-z0-9-]+/g, '_');
+      $('preview').src = blobUrl; $('preview').classList.remove('hidden');
+      $('download').href = blobUrl; $('download').download = `${stem}.pdf`; $('download').classList.remove('hidden');
+      $('open').href = blobUrl; $('open').classList.remove('hidden');
+      $('print').classList.remove('hidden');
+      const n = body.order.checkboxes.length + body.order.otherTests.filter(t => t.trim()).length + (body.order.vitaminD ? 1 : 0);
+      show('ok', `Requisition ready: ${n} test${n === 1 ? '' : 's'}, ${sheets} sheet${sheets === 1 ? '' : 's'}. Review it below, print, and have ${c.name} sign.`);
+      $('preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) {
+      show('err', `Could not reach the server: ${e.message}`);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Create requisition';
+    }
+  });
+
+  $('print').addEventListener('click', () => {
+    const w = $('preview').contentWindow;
+    try { w.focus(); w.print(); } catch { window.open(blobUrl, '_blank'); }
+  });
+
+  $('clear').addEventListener('click', () => {
+    if (!confirm('Clear everything on this page?')) return;
+    document.querySelectorAll('input[type=text], input[type=tel], input[type=date], textarea').forEach(i => i.value = '');
+    document.querySelectorAll('input[type=checkbox]').forEach(i => i.checked = false);
+    document.querySelectorAll('input[type=radio]').forEach(i => i.checked = false);
+    document.querySelector('input[name=glucoseTiming][value=random]').checked = true;
+    $('sex').value = ''; $('payer').value = 'ohip';
+    $('serviceDate').value = today; $('signatureDate').value = today;
+    $('healthNumber').value = ''; hnCheck();
+    $('msg').innerHTML = ''; $('preview').classList.add('hidden'); $('preview').src = 'about:blank';
+    ['print', 'download', 'open'].forEach(id => $(id).classList.add('hidden'));
+    if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+</script>
+</body>
+</html>

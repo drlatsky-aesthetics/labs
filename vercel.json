@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/requisition.js": { "includeFiles": "lib/forms/**" }
+  },
+  "headers": [
+    { "source": "/(.*)", "headers": [ { "key": "X-Robots-Tag", "value": "noindex" } ] }
+  ]
+}
